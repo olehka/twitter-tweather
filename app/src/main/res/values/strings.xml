@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Tweather</string>
+    <string name="temperature_in_celsius_and_fahrenheit">Temperature in Celsius and Fahrenheit</string>
+    <string name="wind_speed">Wind Speed</string>
+    <string name="standard_deviation_of_the_temperature">Standard Deviation of The Temperature</string>
+    <string name="calculate">Calculate</string>
+    <string name="cloud">Cloud</string>
+</resources>
