@@ -38,6 +38,7 @@ class TweatherRepository(
                         cloudiness = it.cloudsInfo?.cloudiness
                     )
                 }
+                Log.d("TweatherRepository", "Future weather for $days days: $weatherList")
                 Result.Success(weatherList)
             }
             is Result.Error -> {
