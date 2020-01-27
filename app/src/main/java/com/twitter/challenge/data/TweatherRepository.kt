@@ -3,17 +3,15 @@ package com.twitter.challenge.data
 import android.util.Log
 import com.twitter.challenge.api.TweatherResponse
 import com.twitter.challenge.api.TweatherService
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.*
 
 class TweatherRepository(
-    private val service: TweatherService
+    private val service: TweatherService,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
-    suspend fun getCurrentWeather(): Result<Weather> {
-        return when (val result = getResult()) {
+    suspend fun getCurrentWeather(): Result<Weather> = withContext(ioDispatcher) {
+        when (val result = getResult()) {
             is Result.Success -> {
                 result.data.let {
                     val weather = Weather(
@@ -30,8 +28,8 @@ class TweatherRepository(
         }
     }
 
-    suspend fun getFutureWeather(days: Int = 5): Result<List<Weather>> {
-        return when (val result = getResultConcurrent(days)) {
+    suspend fun getFutureWeather(days: Int): Result<List<Weather>> = withContext(ioDispatcher) {
+        when (val result = getResultConcurrent(days)) {
             is Result.Success -> {
                 val weatherList = result.data.map {
                     Weather(
@@ -86,4 +84,15 @@ class TweatherRepository(
                 Result.Error(e)
             }
         }
+
+    companion object {
+        // For Singleton instantiation
+        @Volatile private var instance: TweatherRepository? = null
+
+        fun getInstance(service: TweatherService): TweatherRepository {
+            return instance ?: synchronized(this) {
+                instance ?: TweatherRepository(service).also { instance = it }
+            }
+        }
+    }
 }
