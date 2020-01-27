@@ -5,6 +5,9 @@ import kotlin.math.sqrt
 
 fun calculateStandardDeviation(temperatures: List<Double>): Double {
     val size = temperatures.size
+    if (size < 2) {
+        return 0.0
+    }
     var sum = 0.0
     for (t in temperatures) {
         sum += t

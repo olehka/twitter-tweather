@@ -10,40 +10,52 @@ class TweatherRepository(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
+    private var currentWeather: Weather? = null
+    private var futureWeather: List<Weather>? = null
+
     suspend fun getCurrentWeather(): Result<Weather> = withContext(ioDispatcher) {
-        when (val result = getResult()) {
-            is Result.Success -> {
-                result.data.let {
-                    val weather = Weather(
-                        temperature = it.weatherInfo?.temperature,
-                        windSpeed = it.windInfo?.speed,
-                        cloudiness = it.cloudsInfo?.cloudiness
-                    )
-                    Result.Success(weather)
+        if (currentWeather == null) {
+            when (val result = getResult()) {
+                is Result.Success -> {
+                    result.data.let {
+                        val weather = Weather(
+                            temperature = it.weatherInfo?.temperature,
+                            windSpeed = it.windInfo?.speed,
+                            cloudiness = it.cloudsInfo?.cloudiness
+                        )
+                        currentWeather = weather
+                        Result.Success(weather)
+                    }
+                }
+                is Result.Error -> {
+                    result
                 }
             }
-            is Result.Error -> {
-                result
-            }
+        } else {
+            Result.Success(currentWeather!!)
         }
     }
 
     suspend fun getFutureWeather(days: Int): Result<List<Weather>> = withContext(ioDispatcher) {
-        when (val result = getResultConcurrent(days)) {
-            is Result.Success -> {
-                val weatherList = result.data.map {
-                    Weather(
-                        temperature = it.weatherInfo?.temperature,
-                        windSpeed = it.windInfo?.speed,
-                        cloudiness = it.cloudsInfo?.cloudiness
-                    )
+        if (futureWeather == null) {
+            when (val result = getResultConcurrent(days)) {
+                is Result.Success -> {
+                    val weatherList = result.data.map {
+                        Weather(
+                            temperature = it.weatherInfo?.temperature,
+                            windSpeed = it.windInfo?.speed,
+                            cloudiness = it.cloudsInfo?.cloudiness
+                        )
+                    }
+                    futureWeather = weatherList
+                    Result.Success(weatherList)
                 }
-                Log.d("TweatherRepository", "Future weather for $days days: $weatherList")
-                Result.Success(weatherList)
+                is Result.Error -> {
+                    result
+                }
             }
-            is Result.Error -> {
-                result
-            }
+        } else {
+            Result.Success(futureWeather!!)
         }
     }
 

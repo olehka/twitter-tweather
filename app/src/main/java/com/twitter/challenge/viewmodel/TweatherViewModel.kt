@@ -1,14 +1,21 @@
 package com.twitter.challenge.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.*
 import com.twitter.challenge.data.Result
 import com.twitter.challenge.data.TweatherRepository
 import com.twitter.challenge.data.Weather
 import com.twitter.challenge.util.calculateStandardDeviation
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.launch
 
 class TweatherViewModel internal constructor(
-    private val repository: TweatherRepository) : ViewModel() {
+    private val repository: TweatherRepository
+) : ViewModel() {
+
+    private val exceptionHandler = CoroutineExceptionHandler { _, e ->
+        Log.e("TweatherViewModel", e.message, e)
+    }
 
     private val currentWeather = MutableLiveData<Weather>()
     val currentWeatherLiveData: LiveData<Weather> = currentWeather
@@ -19,10 +26,15 @@ class TweatherViewModel internal constructor(
     ) { list -> calculateStandardDeviation(list.map { it.temperature ?: 0.0 }) }
 
     fun updateCurrentWeather() {
-        viewModelScope.launch {
-            val result = repository.getCurrentWeather()
-            if (result is Result.Success) {
-                currentWeather.value = result.data
+        viewModelScope.launch(exceptionHandler) {
+            when (val result = repository.getCurrentWeather()) {
+                is Result.Success -> {
+                    Log.d("TweatherViewModel", "Current weather: ${result.data}")
+                    currentWeather.value = result.data
+                }
+                is Result.Error -> {
+                    Log.e("TweatherViewModel", result.exception.message, result.exception)
+                }
             }
         }
     }
@@ -30,10 +42,15 @@ class TweatherViewModel internal constructor(
     fun updateStandardDeviation() = updateFutureWeather()
 
     private fun updateFutureWeather(days: Int = 5) {
-        viewModelScope.launch {
-            val result = repository.getFutureWeather(days)
-            if (result is Result.Success) {
-                futureWeather.value = result.data
+        viewModelScope.launch(exceptionHandler) {
+            when (val result = repository.getFutureWeather(days)) {
+                is Result.Success -> {
+                    Log.d("TweatherViewModel", "Future weather ($days days): ${result.data}")
+                    futureWeather.value = result.data
+                }
+                is Result.Error -> {
+                    Log.e("TweatherViewModel", result.exception.message, result.exception)
+                }
             }
         }
     }
